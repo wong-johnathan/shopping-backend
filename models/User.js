@@ -40,21 +40,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    accessLevel: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: "accessLevels",
-      },
-    ],
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-    },
-    updatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-    },
     updatePassword: {
       type: Number,
       default: 0,
@@ -66,20 +51,25 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: {
       type: Date,
       required: false,
-    },
-    organizationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "organization",
-      required: true,
-    },
+    }
   },
   { timestamps: true }
 );
 
+categorySchema.virtual("categories", {
+  ref: "category",
+  localField: "_id",
+  foreignField: "createdBy",
+});
+
+categorySchema.virtual("products", {
+  ref: "product",
+  localField: "_id",
+  foreignField: "createdBy",
+});
+
 userSchema.methods.getPublicProfile = async function () {
   const { password, tokens, updatePassword, updatedAt, createdAt, ...userObject } = this.toObject();
-  const accessLevel = await AccessLevel.find({ _id: { $in: userObject.accessLevel } }, "-__v");
-  userObject.accessLevel = accessLevel.map((access) => access.id);
   return userObject;
 };
 
