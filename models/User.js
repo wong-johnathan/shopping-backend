@@ -4,7 +4,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const jwtSecret = config.jwtSecret;
-const AccessLevel = require("./AccessLevel");
 
 const userSchema = new mongoose.Schema(
   {
@@ -51,18 +50,18 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: {
       type: Date,
       required: false,
-    }
+    },
   },
   { timestamps: true }
 );
 
-categorySchema.virtual("categories", {
+userSchema.virtual("categories", {
   ref: "category",
   localField: "_id",
   foreignField: "createdBy",
 });
 
-categorySchema.virtual("products", {
+userSchema.virtual("products", {
   ref: "product",
   localField: "_id",
   foreignField: "createdBy",
@@ -88,7 +87,7 @@ userSchema.methods.generatePasswordReset = function () {
   this.resetPasswordExpires = Date.now() + 60 * 60 * 1000 * 6;
 };
 
-userSchema.statics.findByCredentials = async (email, password) => {
+userSchema.statics.findByCredentials = async ({ email, password }) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("Unable to login: User does not exist");
   const isMatch = await bcrypt.compare(password, user.password);

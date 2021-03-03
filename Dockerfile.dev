@@ -7,7 +7,6 @@ WORKDIR /app
 COPY ./package*.json ./
 
 RUN npm install
-RUN npm install -g @govtechsg/open-attestation-cli
 RUN npm install --save rimraf
 
 COPY . ./

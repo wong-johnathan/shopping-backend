@@ -4,80 +4,63 @@ const auth = require("../../middleware/auth");
 const bcrypt = require("bcryptjs");
 const generator = require("generate-password");
 const User = require("../../models/User");
+const { setUpAccount, resetPassword } = require("../../utils/email");
 
-router.post("/register", auth, async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, contact } = req.body;
 
-    if (await User.findOne({ email })) return res.status(201).send("Cannot create new account with this email address.");
+    if (await User.findOne({ email })) return res.status(201).send({ status: false, message: "Cannot create new account with this email address." });
 
     const password = generator.generate({
       length: 10,
       numbers: true,
     });
 
-    let user = new User({ name, email, password, createdBy: req.user._id });
+    let user = new User({ name, email, password, contact });
     await user.save();
-    res.status(201).send({ user: await user.getPublicProfile(), password });
+    user.generatePasswordReset();
+    await user.save();
+    res.status(201).send({ status: true, message: "Please check your email to verify your account" });
+    setUpAccount({ to: email, name, token: user.resetPasswordToken });
   } catch (e) {
-    console.log(`Error in POST route /user/register: ${e.message}`);
+    console.log(`Error in POST route /auth/register: ${e.message}`);
     res.status(400).send({ status: false, message: e.message });
   }
 });
 
-router.post("/logout", auth, async (req, res) => {
-  try {
-    // req.user.tokens = [];
-    req.user.tokens = req.user.tokens.filter((token) => token.token !== req.headers("Authorization"));
-    await req.user.save();
-    res.send("logout");
-  } catch (e) {
-    console.log(`Error in POST route /admin/logout: ${e.message}`);
-    res.status(400).send({ status: false, message: e.message });
-  }
-});
-
-router.post("/logoutall", auth, async (req, res) => {
-  try {
-    req.user.tokens = [];
-    await req.user.save();
-    res.send("logout");
-  } catch (e) {
-    console.log(`Error in POST route /user/logoutall: ${e.message}`);
-    res.status(400).send({ status: false, message: e.message });
-  }
-});
 
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(email, password);
     let user = await User.findByCredentials({ email, password });
-    const token = await User.generateAuthToken();
-    user.save();
+    const token = await user.generateAuthToken();
     res.send({ user: await user.getPublicProfile(), token });
   } catch (e) {
-    console.log(`Error in POST route /user/login: ${e.message}`);
+    console.log(`Error in POST route /auth/login: ${e.message}`);
     res.status(400).send({ status: false, message: e.message });
   }
 });
 
 router.get("/me", auth, async (req, res) => {
-  res.send(await req.user.getPublicProfile());
+  res.send({ status: true, authUser: await req.user.getPublicProfile() });
 });
 
-router.patch("/password", auth, async (req, res) => {
+router.post("/reset-password", async (req, res) => {
   try {
-    const oldPassword = req.body.password;
-    const newPassword = req.body.password1;
-    const isMatch = await bcrypt.compare(oldPassword, req.user.password);
-    if (isMatch) {
-      req.user.password = newPassword;
-      await req.user.save();
-      res.send("Password has been changed");
-    } else res.status(200).send(false);
+    const user = await User.findOne({ resetPasswordToken: req.body.token, resetPasswordExpires: { $gt: Date.now() } });
+    if (!user) return res.status(200).send({ status: false, message: "Password token is invalid or has expired" });
+    if (req.body.password.length < 7) return res.status(200).send({ status: false, message: "Password length must be greater than 7." });
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    res.send({ status: true, message: "Your password has been updated" });
+    resetPassword({ name: user.name, to: user.email });
   } catch (e) {
-    console.log(`Error in PATCH route /user/password: ${e.message}`);
-    res.status(400).send({ status: false, message: e.message });
+    console.log(`Error in POST route /api/auth/reset-password: ${e.message}`);
+    res.status(400).send(e);
   }
 });
 

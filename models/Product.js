@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const categorySchema = new mongoose.Schema(
+const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -11,14 +11,15 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    image: {
-      type: String,
-    },
-    stock: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+    images: [
+      {
+        index:{type:Number},
+        id: { type: String },
+        url: { type: String },
+        name: { type: String },
+        originalname: { type: String },
+      },
+    ],
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "category",
@@ -35,6 +36,8 @@ const categorySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.index({ name: "text", description: "text" });
 
 const Product = mongoose.model("product", productSchema);
 

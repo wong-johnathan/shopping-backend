@@ -1,25 +1,19 @@
 const mongoose = require("mongoose");
 
-const categorySchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-    },
+const categorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+    unique: true,
   },
-  { timestamps: true }
-);
+  description: {
+    type: String,
+    trim: true,
+  },
+});
 
-categorySchema.virtual("product", {
+categorySchema.virtual("products", {
   ref: "product",
   localField: "_id",
   foreignField: "category",
