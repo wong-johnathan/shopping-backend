@@ -75,10 +75,11 @@ router.get("/id/:id", auth, async (req, res) => {
 
 router.delete("/id/:id", auth, async (req, res) => {
   try {
+    console.log(req.params.id);
     let product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.send({ status: false, message: "Product does not exist." });
-    for (const image of product.images) await deleteFromBucket(image.name);
     res.status(201).send({ status: true, message: "Product successfully removed." });
+    for (const image of product.images) await deleteFromBucket(image.name);
   } catch (e) {
     console.log(`Error in DELETE route /product/id/${id}: ${e.message}`);
     res.status(400).send({ status: false, message: e.message });
@@ -109,7 +110,7 @@ router.patch("/id/:id", auth, upload.array("photos", 5), async (req, res) => {
     const { _id, name, description, category, price, images } = product;
     res.status(201).send({ status: true, product: { _id, name, description, category, price, images } });
   } catch (e) {
-    console.log(`Error in DELETE route /product/id/${req.params.id}: ${e.message}`);
+    console.log(`Error in PATCH route /product/id/${req.params.id}: ${e.message}`);
     res.status(400).send({ status: false, message: e.message });
   }
 });

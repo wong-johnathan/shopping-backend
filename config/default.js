@@ -5,4 +5,5 @@ module.exports = {
   emailPassword: process.env.EMAILPASSWORD,
   privateKey: process.env.PRIVATEKEY,
   privateKeyId: process.env.PRIVATEKEYID,
+  bucketname:process.env.BUCKETNAME
 };

@@ -12,7 +12,7 @@
 // module.exports = upload
 const { Storage } = require("@google-cloud/storage");
 const storage = new Storage({ keyFilename: "./config/serviceKey.json" });
-const bucketname = "john_bucket_demo";
+const {bucketname} = require('config')
 
 const uploadToBucket = async (file) => {
   const res = await storage.bucket(bucketname).upload(file.path, { destination: `${new Date().getTime()}-${file.originalname}` });
